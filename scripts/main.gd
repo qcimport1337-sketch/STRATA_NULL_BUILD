@@ -23,6 +23,7 @@ func _ready() -> void:
     _build_render_pipeline()
     _build_world()
     _build_ui()
+    Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
     print("STRATA_SMOKE_READY")
     show_status("STRATA // NULL  PLATFORM-3D PROTOTYPE", 2.5)
 
@@ -177,6 +178,41 @@ func _build_world() -> void:
     player.setup(camera,self)
     camera_rig.set_quadrant(0)
 
+func _spawn_enemy(name_: String, pos: Vector3) -> void:
+    var enemy = StrataEnemy.new()
+    enemy.name = name_
+    enemy.position = pos
+    enemy.collision_layer = 2
+    enemy.collision_mask = 1
+    world.add_child(enemy)
+
+    var cs = CollisionShape3D.new()
+    var capsule = CapsuleShape3D.new()
+    capsule.radius = 0.38
+    capsule.height = 1.70
+    cs.shape = capsule
+    cs.position.y = 0.85
+    enemy.add_child(cs)
+
+    var body = MeshInstance3D.new()
+    var body_quad = QuadMesh.new()
+    body_quad.size = Vector2(0.86,1.42)
+    body.mesh = body_quad
+    body.position = Vector3(0,0.86,0)
+    body.material_override = _billboard_material(Color(0.018,0.018,0.020))
+    enemy.add_child(body)
+
+    var eye = MeshInstance3D.new()
+    var eye_quad = QuadMesh.new()
+    eye_quad.size = Vector2(0.48,0.10)
+    eye.mesh = eye_quad
+    eye.position = Vector3(0,1.23,-0.02)
+    eye.material_override = _billboard_material(Color(0.94,0.015,0.010))
+    enemy.add_child(eye)
+
+    enemy.setup(player)
+    enemies.append(enemy)
+
 func _build_ui() -> void:
     var ui := CanvasLayer.new()
     ui.layer = 20
@@ -215,6 +251,8 @@ func _build_ui() -> void:
     ui.add_child(wipe)
 
 func _process(delta: float) -> void:
+    gle_cooldown = maxf(0.0, gle_cooldown - delta)
+    _update_crosshair()
     if status_time > 0.0:
         status_time -= delta
         if status_time <= 0.0:
@@ -294,4 +332,74 @@ func quick_load() -> void:
     view_quadrant = int(data.get("view_quadrant",0))
     player.restore(data.get("player",{}))
     camera_rig.set_quadrant(view_quadrant)
-    show_status("LOAD // RESTORED",1.0)
+    show_status("LOAD // RESTORED",1.0)func _add_crosshair_piece(pos: Vector2, size_: Vector2) -> void:
+    var piece = ColorRect.new()
+    piece.position = pos
+    piece.size = size_
+    piece.color = Color(0.90,0.02,0.015,0.95)
+    piece.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    crosshair.add_child(piece)
+    crosshair_parts.append(piece)
+
+func _update_crosshair() -> void:
+    if crosshair == null:
+        return
+    var screen_size = get_viewport_rect().size
+    var p = get_viewport().get_mouse_position()
+    p.x = clampf(p.x, 14.0, screen_size.x - 14.0)
+    p.y = clampf(p.y, 14.0, screen_size.y - 14.0)
+    crosshair.position = p - crosshair.size * 0.5
+    var locked = _enemy_under_crosshair() != null
+    var col = Color(1.0,0.02,0.01,1.0) if locked else Color(0.90,0.02,0.015,0.95)
+    for piece in crosshair_parts:
+        piece.color = col
+
+func _crosshair_internal_position() -> Vector2:
+    var screen_size = get_viewport_rect().size
+    if screen_size.x <= 0.0 or screen_size.y <= 0.0:
+        return Vector2(240,135)
+    var p = get_viewport().get_mouse_position()
+    return Vector2(p.x / screen_size.x * 480.0, p.y / screen_size.y * 270.0)
+
+func _enemy_under_crosshair():
+    if camera == null or player == null:
+        return null
+    var cursor = _crosshair_internal_position()
+    var best = null
+    var best_dist = 99999.0
+    for enemy in enemies:
+        if not is_instance_valid(enemy) or enemy.health <= 0 or not enemy.visible:
+            continue
+        var target_pos = enemy.global_position + Vector3(0,0.95,0)
+        var screen_pos = camera.unproject_position(target_pos)
+        var dist = screen_pos.distance_to(cursor)
+        if dist > 18.0 or dist >= best_dist:
+            continue
+        var query = PhysicsRayQueryParameters3D.create(player.global_position + Vector3(0,1.0,0), target_pos)
+        query.collision_mask = 3
+        query.exclude = [player.get_rid()]
+        var hit = viewport.world_3d.direct_space_state.intersect_ray(query)
+        if not hit.is_empty() and hit.get("collider") == enemy:
+            best = enemy
+            best_dist = dist
+    return best
+
+func _unhandled_input(event: InputEvent) -> void:
+    if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+        fire_gle()
+        return
+    if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE:
+        if Input.mouse_mode == Input.MOUSE_MODE_HIDDEN:
+            Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+        else:
+            Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+        return
+    if rotation_locked:
+        return
+    if event is InputEventKey and event.pressed and not event.echo:
+        if event.physical_keycode == KEY_Q:
+            _rotate_view(-1)
+        elif event.physical_keycode == KEY_E:
+            _rotate_view(1)
+
+
