@@ -14,6 +14,9 @@ var debug_label: Label
 var debug_visible := false
 var status_time := 0.0
 var current_segment := 0
+var view_quadrant := 0
+var rotation_lock := false
+var wipe: ColorRect
 
 func _ready() -> void:
     print("STRATA_BOOT_BEGIN")
@@ -53,6 +56,7 @@ func _mat(c: Color) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
     m.albedo_color = c
     m.roughness = 1.0
+    m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     return m
 
 func _box(name_: String, pos: Vector3, size: Vector3, color: Color, collision := true, parent: Node = null) -> Node3D:
@@ -172,7 +176,7 @@ func _build_world() -> void:
     camera_rig.global_position = Vector3(-8,2.2,9.0)
     player.setup(camera,self)
     player.set_traversal_plane(Vector3.RIGHT, Vector3(0,0,0))
-    camera_rig.set_traversal_plane(Vector3.RIGHT)
+    camera_rig.set_quadrant(0)
 
 func _build_ui() -> void:
     var ui := CanvasLayer.new()
@@ -201,9 +205,15 @@ func _build_ui() -> void:
     var controls := Label.new()
     controls.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
     controls.position = Vector2(18,-38)
-    controls.text = "A / D MOVE    SHIFT RUN    SPACE JUMP    F6 DEBUG"
+    controls.text = "A / D MOVE    Q / E ROTATE VIEW    SHIFT RUN    SPACE JUMP    F6 DEBUG"
     controls.add_theme_font_size_override("font_size", 14)
     ui.add_child(controls)
+
+    wipe = ColorRect.new()
+    wipe.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    wipe.color = Color(0.01,0.01,0.012,0.0)
+    wipe.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    ui.add_child(wipe)
 
 func _process(delta: float) -> void:
     if status_time > 0.0:
@@ -211,7 +221,7 @@ func _process(delta: float) -> void:
         if status_time <= 0.0:
             status.text = ""
 
-    _update_segment_transition()
+    _handle_view_rotation()
 
     debug_label.visible = debug_visible
     if debug_visible and player != null:
@@ -225,27 +235,35 @@ func _process(delta: float) -> void:
     if Input.is_action_just_pressed("toggle_debug"):
         debug_visible = not debug_visible
 
-func _update_segment_transition() -> void:
-    if player == null:
+func _handle_view_rotation() -> void:
+    if rotation_lock:
         return
+    if Input.is_action_just_pressed("rotate_left"):
+        _request_rotation(-1)
+    elif Input.is_action_just_pressed("rotate_right"):
+        _request_rotation(1)
 
-    if current_segment == 0 and player.global_position.x > 9.2:
-        current_segment = 1
-        player.global_position = Vector3(10.5, player.global_position.y, -2.5)
-        player.set_traversal_plane(Vector3(0,0,-1), Vector3(10.5,0,0))
-        camera_rig.set_traversal_plane(Vector3(0,0,-1))
-        show_status("THE PATH TURNS THROUGH THE CITY", 1.8)
+func _request_rotation(direction: int) -> void:
+    rotation_lock = true
+    view_quadrant = posmod(view_quadrant + direction, 4)
+    wipe.color.a = 1.0
+    camera_rig.set_quadrant(view_quadrant)
+    var tangent := camera_rig.plane_tangent
+    player.set_traversal_plane(tangent, player.global_position)
+    show_status("VIEW %s  //  Q/E ROTATE" % _view_name(), 0.9)
+    var tween := create_tween()
+    tween.tween_property(wipe, "color:a", 0.0, 0.16)
+    tween.finished.connect(func(): rotation_lock = false)
 
-    elif current_segment == 1 and player.global_position.z > -1.5:
-        current_segment = 0
-        player.global_position = Vector3(8.6, player.global_position.y, 0)
-        player.set_traversal_plane(Vector3.RIGHT, Vector3(0,0,0))
-        camera_rig.set_traversal_plane(Vector3.RIGHT)
-        show_status("RETURN TO WESTERN SPAN", 1.2)
+func _view_name() -> String:
+    match view_quadrant:
+        0: return "EAST"
+        1: return "NORTH"
+        2: return "WEST"
+        _: return "SOUTH"
 
-func on_player_plane_changed(tangent: Vector3) -> void:
-    if camera_rig != null:
-        camera_rig.set_traversal_plane(tangent)
+func on_player_plane_changed(_tangent: Vector3) -> void:
+    pass
 
 func show_status(text_: String, seconds := 1.0) -> void:
     status.text = text_
@@ -264,6 +282,7 @@ func quick_save() -> void:
     var data := {
         "world_seed": WORLD_SEED,
         "segment": current_segment,
+        "view_quadrant": view_quadrant,
         "player": player.serialize()
     }
     show_status("SAVE // WRITTEN" if SaveService.save_game(data) else "SAVE // FAILED",1.0)
@@ -274,6 +293,8 @@ func quick_load() -> void:
         show_status("LOAD // NO SAVE",1.0)
         return
     current_segment = int(data.get("segment",0))
+    view_quadrant = int(data.get("view_quadrant",0))
     player.restore(data.get("player",{}))
-    camera_rig.set_traversal_plane(player.plane_tangent)
+    camera_rig.set_quadrant(view_quadrant)
+    player.set_traversal_plane(camera_rig.plane_tangent, player.global_position)
     show_status("LOAD // RESTORED",1.0)
