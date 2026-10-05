@@ -37,8 +37,8 @@ func _process(delta: float) -> void:
         return
 
     plane_normal = plane_normal.slerp(desired_normal, clampf(delta * 5.0, 0.0, 1.0)).normalized()
-    var ahead := plane_tangent * look_ahead * sign(target.velocity.dot(plane_tangent))
-    var focus := target.global_position + Vector3(0, follow_height, 0) + ahead
-    var desired_pos := focus + plane_normal * camera_distance + Vector3(0, 1.1, 0)
+    var ahead: Vector3 = plane_tangent * look_ahead * signf(target.velocity.dot(plane_tangent))
+    var focus: Vector3 = target.global_position + Vector3(0, follow_height, 0) + ahead
+    var desired_pos: Vector3 = focus + plane_normal * camera_distance + Vector3(0, 1.1, 0)
     global_position = global_position.lerp(desired_pos, 1.0 - exp(-smooth_speed * delta))
     look_at(focus, Vector3.UP)
