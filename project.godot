@@ -10,6 +10,11 @@ boot_splash/bg_color=Color(0.03, 0.03, 0.035, 1)
 
 [autoload]
 SaveService="*res://scripts/save_service.gd"
+RuntimeLogger="*res://scripts/runtime_logger.gd"
+
+[debug]
+file_logging/enable_file_logging=true
+file_logging/log_path="user://logs/godot.log"
 
 [display]
 window/size/viewport_width=1280
