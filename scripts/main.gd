@@ -19,11 +19,14 @@ var rotation_lock := false
 var wipe: ColorRect
 
 func _ready() -> void:
+    RuntimeLogger.clear()
+    RuntimeLogger.write("BOOT_BEGIN")
     print("STRATA_BOOT_BEGIN")
     _build_render_pipeline()
     _build_world()
     _build_ui()
     print("STRATA_SMOKE_READY")
+    RuntimeLogger.write("SMOKE_READY")
     show_status("STRATA // NULL  PLATFORM-3D PROTOTYPE", 2.5)
 
 func _build_render_pipeline() -> void:
@@ -268,7 +271,9 @@ func show_status(text_: String, seconds := 1.0) -> void:
     status_time = seconds
 
 func fire_gle() -> void:
+    RuntimeLogger.write("GLE_FIRE_ENTER")
     show_status("GLE // LATER PLATFORM PASS", 0.6)
+    RuntimeLogger.write("GLE_FIRE_EXIT")
 
 func try_interact() -> void:
     show_status("INTERACTION // LATER PLATFORM PASS", 0.6)
