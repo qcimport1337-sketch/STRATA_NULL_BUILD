@@ -66,8 +66,11 @@ func _physics_process(delta: float) -> void:
         reconstruct()
 
     if Input.is_action_just_pressed("primary_fire") and _fire_cooldown <= 0.0:
+        RuntimeLogger.write("LMB_FIRE_ACTION_RECEIVED")
         _fire_cooldown = 0.20
+        RuntimeLogger.write("GLE_CALL_BEGIN")
         game.fire_gle()
+        RuntimeLogger.write("GLE_CALL_RETURNED")
     if Input.is_action_just_pressed("interact"):
         game.try_interact()
     if Input.is_action_just_pressed("quick_save"):
