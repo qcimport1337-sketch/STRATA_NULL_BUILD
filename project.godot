@@ -43,4 +43,6 @@ primary_fire={"deadzone":0.2,"events":[Object(InputEventMouseButton,"button_inde
 quick_save={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":4194336)]}
 quick_load={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":4194340)]}
 toggle_debug={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":4194337)]}
+rotate_left={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":81)]}
+rotate_right={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":69)]}
 pause={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":4194305)]}
