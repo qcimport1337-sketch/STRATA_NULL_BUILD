@@ -65,9 +65,6 @@ func _physics_process(delta: float) -> void:
     if global_position.y < -18.0:
         reconstruct()
 
-    if Input.is_action_just_pressed("primary_fire") and _fire_cooldown <= 0.0:
-        _fire_cooldown = 0.20
-        game.fire_gle()
     if Input.is_action_just_pressed("interact"):
         game.try_interact()
     if Input.is_action_just_pressed("quick_save"):
