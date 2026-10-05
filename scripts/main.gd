@@ -104,7 +104,7 @@ func _build_world() -> void:
     world.add_child(sun)
 
     # SEGMENT A: classic side-view platforming along world X.
-    _box("A_Floor", Vector3(0,-0.30,0), Vector3(22,0.6,3.0), Color(0.08,0.08,0.085))
+    _box("A_Floor", Vector3(0,-0.30,-2.5), Vector3(22,0.6,10.0), Color(0.08,0.08,0.085))
     _box("A_Platform1", Vector3(-4.0,1.3,0), Vector3(3.4,0.35,2.6), Color(0.16,0.16,0.16))
     _box("A_Platform2", Vector3(1.0,2.4,0), Vector3(3.1,0.35,2.6), Color(0.20,0.20,0.19))
     _box("A_Platform3", Vector3(5.4,1.1,0), Vector3(2.8,0.35,2.6), Color(0.13,0.13,0.135))
@@ -116,10 +116,10 @@ func _build_world() -> void:
         _box("A_BackRib%d" % i, Vector3(-8.0 + i*2.8,4.0,-7.0), Vector3(0.18,8.0,0.18), Color(0.015,0.015,0.017), false)
 
     # Corner landing where the path physically turns 90 degrees in 3D.
-    _box("Corner", Vector3(10.5,0.0,-1.5), Vector3(3.0,0.45,6.0), Color(0.10,0.10,0.105))
+    _box("Corner", Vector3(10.5,0.0,-5.0), Vector3(7.0,0.45,11.0), Color(0.10,0.10,0.105))
 
     # SEGMENT B: same 2D platformer controls, but now the local plane runs along world -Z.
-    _box("B_Floor", Vector3(10.5,-0.30,-12.0), Vector3(3.0,0.6,20.0), Color(0.075,0.075,0.08))
+    _box("B_Floor", Vector3(10.5,-0.30,-12.0), Vector3(8.0,0.6,20.0), Color(0.075,0.075,0.08))
     _box("B_Platform1", Vector3(10.5,1.4,-8.0), Vector3(2.7,0.35,3.0), Color(0.18,0.18,0.18))
     _box("B_Platform2", Vector3(10.5,2.6,-13.0), Vector3(2.7,0.35,3.0), Color(0.22,0.22,0.21))
     _box("B_Platform3", Vector3(10.5,1.2,-18.0), Vector3(2.7,0.35,3.0), Color(0.14,0.14,0.145))
@@ -175,7 +175,6 @@ func _build_world() -> void:
     camera = camera_rig.setup(player)
     camera_rig.global_position = Vector3(-8,2.2,9.0)
     player.setup(camera,self)
-    player.set_traversal_plane(Vector3.RIGHT, Vector3(0,0,0))
     camera_rig.set_quadrant(0)
 
 func _build_ui() -> void:
@@ -205,7 +204,7 @@ func _build_ui() -> void:
     var controls := Label.new()
     controls.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
     controls.position = Vector2(18,-38)
-    controls.text = "A / D MOVE    Q / E ROTATE VIEW    SHIFT RUN    SPACE JUMP    F6 DEBUG"
+    controls.text = "WASD MOVE IN 3D    Q / E ROTATE VIEW    SHIFT RUN    SPACE JUMP    F6 DEBUG"
     controls.add_theme_font_size_override("font_size", 14)
     ui.add_child(controls)
 
@@ -249,7 +248,6 @@ func _request_rotation(direction: int) -> void:
     wipe.color.a = 1.0
     camera_rig.set_quadrant(view_quadrant)
     var tangent := camera_rig.plane_tangent
-    player.set_traversal_plane(tangent, player.global_position)
     show_status("VIEW %s  //  Q/E ROTATE" % _view_name(), 0.9)
     var tween := create_tween()
     tween.tween_property(wipe, "color:a", 0.0, 0.16)
@@ -296,5 +294,4 @@ func quick_load() -> void:
     view_quadrant = int(data.get("view_quadrant",0))
     player.restore(data.get("player",{}))
     camera_rig.set_quadrant(view_quadrant)
-    player.set_traversal_plane(camera_rig.plane_tangent, player.global_position)
     show_status("LOAD // RESTORED",1.0)
