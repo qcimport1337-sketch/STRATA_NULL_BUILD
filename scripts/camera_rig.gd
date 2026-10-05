@@ -92,8 +92,8 @@ func _snap_to_target() -> void:
     if target == null:
         return
     var focus := target.global_position + Vector3(0, follow_height, 0)
-    global_position = focus + plane_normal * camera_distance + Vector3(0,0.8,0)
-    look_at(focus, Vector3.UP)
+    global_position = focus + plane_normal * camera_distance + Vector3(0, 4.2, 0)
+    look_at(focus + Vector3(0, 0.35, 0), Vector3.UP)
 
 func _process(_delta: float) -> void:
     if target == null:
@@ -101,5 +101,6 @@ func _process(_delta: float) -> void:
     var travel_sign := signf(target.velocity.dot(plane_tangent))
     var ahead: Vector3 = plane_tangent * look_ahead * travel_sign
     var focus: Vector3 = target.global_position + Vector3(0, follow_height, 0) + ahead
-    global_position = focus + plane_normal * camera_distance + Vector3(0,0.8,0)
-    look_at(focus, Vector3.UP)
+    # Keep an orthographic "2D panel" composition while revealing real floor depth.
+    global_position = focus + plane_normal * camera_distance + Vector3(0, 4.2, 0)
+    look_at(focus + Vector3(0, 0.35, 0), Vector3.UP)
