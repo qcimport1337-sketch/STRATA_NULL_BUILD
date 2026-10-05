@@ -1,0 +1,80 @@
+name: Build STRATA NULL Windows Native
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-native-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Godot 4.7.2 and templates
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_win64.exe.zip" -OutFile "godot.zip"
+          Expand-Archive -Path "godot.zip" -DestinationPath "godot"
+          $exe = Get-ChildItem -Path "godot" -Filter "Godot_v4.7.2-stable_win64.exe" -Recurse | Select-Object -First 1
+          if (-not $exe) { throw "Godot editor executable not found" }
+          Copy-Item $exe.FullName ".\godot.exe"
+
+          Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" -OutFile "templates.zip"
+          Expand-Archive -Path "templates.zip" -DestinationPath "templates_unpack"
+          $dest = Join-Path $env:APPDATA "Godot\export_templates\4.7.2.stable"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item -Path "templates_unpack\templates\*" -Destination $dest -Recurse -Force
+
+      - name: Import project
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          .\godot.exe --headless --path . --editor --quit *>&1 | Tee-Object -FilePath import.log
+          $txt = Get-Content import.log -Raw
+          if ($txt -match "SCRIPT ERROR|Parse Error|ERROR:") { throw "Godot import reported an error" }
+
+      - name: Runtime smoke test
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $p = Start-Process -FilePath ".\godot.exe" -ArgumentList "--headless","--path",".","--","--smoke-test" -NoNewWindow -RedirectStandardOutput runtime.out -RedirectStandardError runtime.err -PassThru
+          if (-not $p.WaitForExit(12000)) { $p.Kill() }
+          $txt = ""
+          if (Test-Path runtime.out) { $txt += Get-Content runtime.out -Raw }
+          if (Test-Path runtime.err) { $txt += Get-Content runtime.err -Raw }
+          $txt | Set-Content runtime.log
+          Write-Host $txt
+          if ($txt -match "SCRIPT ERROR|Parse Error|Invalid call|Invalid access|ERROR:") { throw "Runtime error detected" }
+          if ($txt -notmatch "STRATA_SMOKE_READY") { throw "Runtime did not reach STRATA_SMOKE_READY" }
+
+      - name: Export single Windows EXE
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          .\godot.exe --headless --path . --export-release "Windows Desktop" "build\STRATA_NULL.exe" *>&1 | Tee-Object -FilePath export.log
+          $txt = Get-Content export.log -Raw
+          if ($txt -match "SCRIPT ERROR|Parse Error|ERROR:") { throw "Export reported an error" }
+          if (-not (Test-Path "build\STRATA_NULL.exe")) { throw "EXE missing" }
+          $hash = (Get-FileHash "build\STRATA_NULL.exe" -Algorithm SHA256).Hash.ToLower()
+          "$hash  STRATA_NULL.exe" | Set-Content "build\SHA256.txt"
+          Copy-Item runtime.log "build\RUNTIME_SMOKE_TEST.txt"
+
+      - name: Package runnable ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "build\STRATA_NULL.exe","build\SHA256.txt","build\RUNTIME_SMOKE_TEST.txt" -DestinationPath "build\STRATA_NULL_Prototype_024_RUNNABLE.zip" -Force
+
+      - name: Upload runnable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: STRATA_NULL_Prototype_024_RUNNABLE
+          path: build/STRATA_NULL_Prototype_024_RUNNABLE.zip
+          if-no-files-found: error
+          retention-days: 14
