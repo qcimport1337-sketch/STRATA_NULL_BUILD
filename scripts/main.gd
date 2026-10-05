@@ -1,6 +1,6 @@
 extends Control
 
-const INTERNAL_SIZE := Vector2i(640, 360)
+const INTERNAL_SIZE := Vector2i(480, 270)
 const WORLD_SEED := 59017831
 
 var viewport: SubViewport
@@ -11,49 +11,33 @@ var camera: Camera3D
 var hud: Label
 var status: Label
 var debug_label: Label
-var boot_label: Label
-var debug_visible := true
+var debug_visible := false
 var status_time := 0.0
+var current_segment := 0
 
 func _ready() -> void:
     print("STRATA_BOOT_BEGIN")
-    _build_boot_ui()
     _build_render_pipeline()
-    _build_world_safe()
+    _build_world()
     _build_ui()
-    boot_label.visible = false
     print("STRATA_SMOKE_READY")
-    show_status("STRATA // NULL  0.2.1 SAFE FOUNDATION", 3.0)
-
-func _build_boot_ui() -> void:
-    var bg := ColorRect.new()
-    bg.name = "BootBackground"
-    bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    bg.color = Color(0.035, 0.035, 0.04, 1.0)
-    add_child(bg)
-
-    boot_label = Label.new()
-    boot_label.name = "BootLabel"
-    boot_label.set_anchors_preset(Control.PRESET_CENTER)
-    boot_label.position = Vector2(-240, -35)
-    boot_label.size = Vector2(480, 70)
-    boot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    boot_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-    boot_label.text = "STRATA // NULL\nINITIALIZING SAFE WORLD..."
-    boot_label.add_theme_font_size_override("font_size", 22)
-    add_child(boot_label)
+    show_status("STRATA // NULL  PLATFORM-3D PROTOTYPE", 2.5)
 
 func _build_render_pipeline() -> void:
+    var bg := ColorRect.new()
+    bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    bg.color = Color(0.94,0.94,0.91,1.0)
+    add_child(bg)
+
     var container := SubViewportContainer.new()
     container.name = "LowResContainer"
     container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     container.stretch = true
     container.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
     add_child(container)
-    move_child(container, 1)
 
     viewport = SubViewport.new()
-    viewport.name = "LowResWorld"
+    viewport.name = "PixelWorld"
     viewport.size = INTERNAL_SIZE
     viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
     viewport.msaa_3d = Viewport.MSAA_DISABLED
@@ -71,7 +55,7 @@ func _mat(c: Color) -> StandardMaterial3D:
     m.roughness = 1.0
     return m
 
-func _box(name_: String, pos: Vector3, size: Vector3, color: Color, collision := true) -> Node3D:
+func _box(name_: String, pos: Vector3, size: Vector3, color: Color, collision := true, parent: Node = null) -> Node3D:
     var root: Node3D
     if collision:
         root = StaticBody3D.new()
@@ -81,7 +65,7 @@ func _box(name_: String, pos: Vector3, size: Vector3, color: Color, collision :=
         root = Node3D.new()
     root.name = name_
     root.position = pos
-    world.add_child(root)
+    (parent if parent != null else world).add_child(root)
 
     var mesh := MeshInstance3D.new()
     var box := BoxMesh.new()
@@ -98,80 +82,97 @@ func _box(name_: String, pos: Vector3, size: Vector3, color: Color, collision :=
         root.add_child(cs)
     return root
 
-func _build_world_safe() -> void:
+func _build_world() -> void:
     var env_node := WorldEnvironment.new()
     var env := Environment.new()
     env.background_mode = Environment.BG_COLOR
-    env.background_color = Color(0.82, 0.82, 0.79)
+    env.background_color = Color(0.88,0.88,0.84)
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    env.ambient_light_color = Color(0.72, 0.72, 0.70)
-    env.ambient_light_energy = 0.72
+    env.ambient_light_color = Color(0.82,0.82,0.78)
+    env.ambient_light_energy = 0.80
     env_node.environment = env
     world.add_child(env_node)
 
     var sun := DirectionalLight3D.new()
-    sun.rotation_degrees = Vector3(-48.0, -32.0, 0.0)
-    sun.light_energy = 1.0
+    sun.rotation_degrees = Vector3(-45,-35,0)
+    sun.light_energy = 0.85
     sun.shadow_enabled = false
     world.add_child(sun)
 
-    _box("Floor", Vector3(0, -0.3, -7), Vector3(12, 0.6, 28), Color(0.09,0.09,0.095))
-    _box("LeftWall", Vector3(-6.0, 3.0, -7), Vector3(0.5, 6.6, 28), Color(0.15,0.15,0.155))
-    _box("RightWall", Vector3(6.0, 3.0, -7), Vector3(0.5, 6.6, 28), Color(0.15,0.15,0.155))
+    # SEGMENT A: classic side-view platforming along world X.
+    _box("A_Floor", Vector3(0,-0.30,0), Vector3(22,0.6,3.0), Color(0.08,0.08,0.085))
+    _box("A_Platform1", Vector3(-4.0,1.3,0), Vector3(3.4,0.35,2.6), Color(0.16,0.16,0.16))
+    _box("A_Platform2", Vector3(1.0,2.4,0), Vector3(3.1,0.35,2.6), Color(0.20,0.20,0.19))
+    _box("A_Platform3", Vector3(5.4,1.1,0), Vector3(2.8,0.35,2.6), Color(0.13,0.13,0.135))
 
-    for i in range(9):
-        var z := 4.0 - float(i) * 3.0
-        _box("RibL_%d" % i, Vector3(-5.3, 3.7, z), Vector3(0.22, 7.4, 0.25), Color(0.015,0.015,0.018), false)
-        _box("RibR_%d" % i, Vector3(5.3, 3.7, z), Vector3(0.22, 7.4, 0.25), Color(0.015,0.015,0.018), false)
-        _box("RibTop_%d" % i, Vector3(0, 7.25, z), Vector3(10.8, 0.18, 0.25), Color(0.015,0.015,0.018), false)
+    # Huge distant masses, physically behind the platform plane.
+    _box("A_BackMass1", Vector3(-5,4.5,-12), Vector3(8,10,5), Color(0.20,0.20,0.19), false)
+    _box("A_BackMass2", Vector3(5,6.0,-18), Vector3(10,14,6), Color(0.12,0.12,0.12), false)
+    for i in range(7):
+        _box("A_BackRib%d" % i, Vector3(-8.0 + i*2.8,4.0,-7.0), Vector3(0.18,8.0,0.18), Color(0.015,0.015,0.017), false)
 
-    _box("Bridge", Vector3(0, 0.05, -22.0), Vector3(3.0, 0.35, 8.0), Color(0.11,0.11,0.115))
-    _box("FarMass", Vector3(0, 6.0, -33.0), Vector3(18.0, 13.0, 6.0), Color(0.20,0.20,0.195))
-    _box("RedMarker", Vector3(3.2, 1.3, -15.5), Vector3(1.4, 2.6, 0.35), Color(0.82,0.025,0.018))
+    # Corner landing where the path physically turns 90 degrees in 3D.
+    _box("Corner", Vector3(10.5,0.0,-1.5), Vector3(3.0,0.45,6.0), Color(0.10,0.10,0.105))
 
+    # SEGMENT B: same 2D platformer controls, but now the local plane runs along world -Z.
+    _box("B_Floor", Vector3(10.5,-0.30,-12.0), Vector3(3.0,0.6,20.0), Color(0.075,0.075,0.08))
+    _box("B_Platform1", Vector3(10.5,1.4,-8.0), Vector3(2.7,0.35,3.0), Color(0.18,0.18,0.18))
+    _box("B_Platform2", Vector3(10.5,2.6,-13.0), Vector3(2.7,0.35,3.0), Color(0.22,0.22,0.21))
+    _box("B_Platform3", Vector3(10.5,1.2,-18.0), Vector3(2.7,0.35,3.0), Color(0.14,0.14,0.145))
+    _box("B_RedGate", Vector3(10.5,1.5,-21.0), Vector3(2.2,3.0,0.4), Color(0.88,0.02,0.015))
+
+    # Deep architecture visible only after the camera turns with the traversal plane.
+    _box("B_BackMass", Vector3(24.0,6.0,-13.0), Vector3(8,15,14), Color(0.16,0.16,0.15), false)
     for i in range(8):
-        var x := -4.0 + float(i) * 1.15
-        _box("Pipe_%d" % i, Vector3(x, 5.3, -12.0), Vector3(0.13, 0.13, 17.0), Color(0.035,0.035,0.038), false)
+        _box("B_Rib%d" % i, Vector3(17.0,4.0,-3.0-i*2.6), Vector3(0.2,8.0,0.2), Color(0.02,0.02,0.02), false)
 
+    # Player: graphic silhouette, not capsule presentation.
     player = StrataPlayer.new()
     player.name = "Kael"
-    player.position = Vector3(0, 0.8, 4.5)
+    player.position = Vector3(-8.0,0.8,0)
     player.collision_layer = 4
     player.collision_mask = 1
     world.add_child(player)
 
     var pshape := CollisionShape3D.new()
     var capsule := CapsuleShape3D.new()
-    capsule.radius = 0.34
+    capsule.radius = 0.30
     capsule.height = 1.65
     pshape.shape = capsule
     pshape.position.y = 0.82
     player.add_child(pshape)
 
-    var visual := MeshInstance3D.new()
-    var capmesh := CapsuleMesh.new()
-    capmesh.radius = 0.34
-    capmesh.height = 1.65
-    visual.mesh = capmesh
-    visual.position.y = 0.82
-    visual.material_override = _mat(Color(0.01,0.01,0.012))
-    player.add_child(visual)
+    var body := MeshInstance3D.new()
+    var body_box := BoxMesh.new()
+    body_box.size = Vector3(0.62,1.18,0.34)
+    body.mesh = body_box
+    body.position = Vector3(0,0.78,0)
+    body.material_override = _mat(Color(0.01,0.01,0.012))
+    player.add_child(body)
 
     var head := MeshInstance3D.new()
-    var sphere := SphereMesh.new()
-    sphere.radius = 0.24
-    sphere.height = 0.48
-    head.mesh = sphere
-    head.position = Vector3(0,1.75,0)
-    head.material_override = _mat(Color(0.73,0.73,0.70))
+    var head_box := BoxMesh.new()
+    head_box.size = Vector3(0.52,0.50,0.38)
+    head.mesh = head_box
+    head.position = Vector3(0,1.62,0)
+    head.material_override = _mat(Color(0.72,0.72,0.68))
     player.add_child(head)
 
+    var arm := MeshInstance3D.new()
+    var arm_box := BoxMesh.new()
+    arm_box.size = Vector3(0.65,0.18,0.18)
+    arm.mesh = arm_box
+    arm.position = Vector3(0.43,0.93,0)
+    arm.material_override = _mat(Color(0.01,0.01,0.012))
+    player.add_child(arm)
+
     camera_rig = StrataCameraRig.new()
-    camera_rig.name = "CameraRig"
     world.add_child(camera_rig)
     camera = camera_rig.setup(player)
-    camera_rig.global_position = player.global_position + Vector3(0, 1.4, 0)
-    player.setup(camera, self)
+    camera_rig.global_position = Vector3(-8,2.2,9.0)
+    player.setup(camera,self)
+    player.set_traversal_plane(Vector3.RIGHT, Vector3(0,0,0))
+    camera_rig.set_traversal_plane(Vector3.RIGHT)
 
 func _build_ui() -> void:
     var ui := CanvasLayer.new()
@@ -179,28 +180,28 @@ func _build_ui() -> void:
     add_child(ui)
 
     hud = Label.new()
-    hud.position = Vector2(24, 20)
+    hud.position = Vector2(18,14)
     hud.text = "STRATA // NULL"
-    hud.add_theme_font_size_override("font_size", 20)
+    hud.add_theme_font_size_override("font_size", 18)
     ui.add_child(hud)
 
     status = Label.new()
     status.set_anchors_preset(Control.PRESET_CENTER_TOP)
-    status.position = Vector2(-300, 26)
-    status.size = Vector2(600, 38)
+    status.position = Vector2(-300,20)
+    status.size = Vector2(600,34)
     status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    status.add_theme_font_size_override("font_size", 18)
+    status.add_theme_font_size_override("font_size", 17)
     ui.add_child(status)
 
     debug_label = Label.new()
-    debug_label.position = Vector2(24, 52)
-    debug_label.add_theme_font_size_override("font_size", 14)
+    debug_label.position = Vector2(18,44)
+    debug_label.add_theme_font_size_override("font_size", 13)
     ui.add_child(debug_label)
 
     var controls := Label.new()
     controls.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-    controls.position = Vector2(24,-42)
-    controls.text = "WASD MOVE   SHIFT RUN   SPACE JUMP   ESC RELEASE MOUSE"
+    controls.position = Vector2(18,-38)
+    controls.text = "A / D MOVE    SHIFT RUN    SPACE JUMP    F6 DEBUG"
     controls.add_theme_font_size_override("font_size", 14)
     ui.add_child(controls)
 
@@ -210,40 +211,69 @@ func _process(delta: float) -> void:
         if status_time <= 0.0:
             status.text = ""
 
-    if player != null:
-        debug_label.visible = debug_visible
-        if debug_visible:
-            debug_label.text = "FPS %d\nPOS %.1f  %.1f  %.1f\nHP %d\nSAFE RENDER PATH" % [
-                Engine.get_frames_per_second(),
-                player.global_position.x,
-                player.global_position.y,
-                player.global_position.z,
-                player.health
-            ]
+    _update_segment_transition()
+
+    debug_label.visible = debug_visible
+    if debug_visible and player != null:
+        debug_label.text = "FPS %d\nSEGMENT %d\nWORLD XYZ %.1f %.1f %.1f" % [
+            Engine.get_frames_per_second(),
+            current_segment + 1,
+            player.global_position.x,
+            player.global_position.y,
+            player.global_position.z
+        ]
     if Input.is_action_just_pressed("toggle_debug"):
         debug_visible = not debug_visible
+
+func _update_segment_transition() -> void:
+    if player == null:
+        return
+
+    if current_segment == 0 and player.global_position.x > 9.2:
+        current_segment = 1
+        player.global_position = Vector3(10.5, player.global_position.y, -2.5)
+        player.set_traversal_plane(Vector3(0,0,-1), Vector3(10.5,0,0))
+        camera_rig.set_traversal_plane(Vector3(0,0,-1))
+        show_status("THE PATH TURNS THROUGH THE CITY", 1.8)
+
+    elif current_segment == 1 and player.global_position.z > -1.5:
+        current_segment = 0
+        player.global_position = Vector3(8.6, player.global_position.y, 0)
+        player.set_traversal_plane(Vector3.RIGHT, Vector3(0,0,0))
+        camera_rig.set_traversal_plane(Vector3.RIGHT)
+        show_status("RETURN TO WESTERN SPAN", 1.2)
+
+func on_player_plane_changed(tangent: Vector3) -> void:
+    if camera_rig != null:
+        camera_rig.set_traversal_plane(tangent)
 
 func show_status(text_: String, seconds := 1.0) -> void:
     status.text = text_
     status_time = seconds
 
 func fire_gle() -> void:
-    show_status("GLE // SAFE TEST", 0.6)
+    show_status("GLE // LATER PLATFORM PASS", 0.6)
 
 func try_interact() -> void:
-    show_status("INTERACTION // SAFE TEST", 0.6)
+    show_status("INTERACTION // LATER PLATFORM PASS", 0.6)
 
 func flash_damage() -> void:
     pass
 
 func quick_save() -> void:
-    var data := {"world_seed": WORLD_SEED, "player": player.serialize()}
-    show_status("SAVE // WRITTEN" if SaveService.save_game(data) else "SAVE // FAILED", 1.0)
+    var data := {
+        "world_seed": WORLD_SEED,
+        "segment": current_segment,
+        "player": player.serialize()
+    }
+    show_status("SAVE // WRITTEN" if SaveService.save_game(data) else "SAVE // FAILED",1.0)
 
 func quick_load() -> void:
     var data := SaveService.load_game()
     if data.is_empty():
-        show_status("LOAD // NO SAVE", 1.0)
+        show_status("LOAD // NO SAVE",1.0)
         return
-    player.restore(data.get("player", {}))
-    show_status("LOAD // RESTORED", 1.0)
+    current_segment = int(data.get("segment",0))
+    player.restore(data.get("player",{}))
+    camera_rig.set_traversal_plane(player.plane_tangent)
+    show_status("LOAD // RESTORED",1.0)
