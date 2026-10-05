@@ -54,7 +54,7 @@ func _physics_process(delta: float) -> void:
     velocity.y = vertical
 
     if absf(axis) > 0.05:
-        var face_dir := plane_tangent * sign(axis)
+        var face_dir: Vector3 = plane_tangent * signf(axis)
         rotation.y = lerp_angle(rotation.y, atan2(-face_dir.x, -face_dir.z), clampf(delta * 12.0, 0.0, 1.0))
 
     move_and_slide()
