@@ -1,7 +1,7 @@
 config_version=5
 
 [application]
-config/name="STRATA // NULL — Artwork-Converged Procedural Field Prototype"
+config/name="STRATA // NULL — Screenshot-Converged Procedural Field Prototype v0.9"
 run/main_scene="res://scenes/modular_field.tscn"
 config/features=PackedStringArray("4.7")
 boot_splash/show_image=false
