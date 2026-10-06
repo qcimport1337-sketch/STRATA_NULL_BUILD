@@ -1,48 +1,21 @@
-; STRATA//NULL Prototype 0.2
 config_version=5
 
 [application]
-config/name="STRATA // NULL — Prototype 0.2"
-run/main_scene="res://scenes/main.tscn"
+config/name="STRATA // NULL — Artwork-Converged Procedural Field Prototype"
+run/main_scene="res://scenes/modular_field.tscn"
 config/features=PackedStringArray("4.7")
 boot_splash/show_image=false
-boot_splash/bg_color=Color(0.03, 0.03, 0.035, 1)
-
-[autoload]
-SaveService="*res://scripts/save_service.gd"
+boot_splash/bg_color=Color(0.015,0.015,0.018,1)
 
 [display]
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=1672
+window/size/viewport_height=941
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
-window/handheld/orientation=1
 
 [rendering]
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-textures/default_filters/use_nearest_mipmap_filter=false
-textures/canvas_textures/default_texture_filter=0
-anti_aliasing/quality/msaa_3d=0
-anti_aliasing/quality/screen_space_aa=0
-
-[physics]
-common/physics_ticks_per_second=60
-
-[input]
-move_forward={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":87), Object(InputEventJoypadMotion,"axis":1,"axis_value":-1.0)]}
-move_back={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":83), Object(InputEventJoypadMotion,"axis":1,"axis_value":1.0)]}
-move_left={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":65), Object(InputEventJoypadMotion,"axis":0,"axis_value":-1.0)]}
-move_right={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":68), Object(InputEventJoypadMotion,"axis":0,"axis_value":1.0)]}
-jump={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":32), Object(InputEventJoypadButton,"button_index":0)]}
-sprint={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":4194325), Object(InputEventJoypadButton,"button_index":9)]}
-interact={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":70), Object(InputEventJoypadButton,"button_index":2)]}
-primary_fire={"deadzone":0.2,"events":[Object(InputEventMouseButton,"button_index":1), Object(InputEventJoypadButton,"button_index":7)]}
-quick_save={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":4194336)]}
-quick_load={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":4194340)]}
-toggle_debug={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":4194337)]}
-rotate_left={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":81)]}
-rotate_right={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":69)]}
-pause={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":4194305)]}
+textures/canvas_textures/default_texture_filter=1
