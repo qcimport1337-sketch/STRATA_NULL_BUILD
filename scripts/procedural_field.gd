@@ -53,7 +53,7 @@ func _process(delta:float) -> void:
     if Input.is_action_just_pressed("debug_mesh"):
         debug = not debug; debug_label.visible = debug; queue_redraw()
     _move(delta); _interaction()
-    var t := Time.get_ticks_msec()/1000.0
+    var t: float = float(Time.get_ticks_msec()) / 1000.0
     glow_a.energy = 0.32 + 0.14*sin(t*2.1)
     glow_b.energy = 0.34 + 0.15*sin(t*1.7+1.0)
     if msg_timer > 0.0:
@@ -63,7 +63,7 @@ func _process(delta:float) -> void:
 func _generate() -> void:
     rng.randomize(); seed = int(rng.randi())
     grammar = "ABYSS" if rng.randi_range(0,1)==0 else "CORRIDOR"
-    var img := Image.create(W,H,false,Image.FORMAT_RGBA8)
+    var img: Image = Image.create(W,H,false,Image.FORMAT_RGBA8)
     img.fill(Color(0.95,0.95,0.95,1))
     if grammar == "ABYSS": _compose_abyss(img); _nav_abyss()
     else: _compose_corridor(img); _nav_corridor()
@@ -75,16 +75,16 @@ func _generate() -> void:
     _update_player(); queue_redraw()
 
 func _compose_abyss(img:Image) -> void:
-    var a := _src(SOURCES[rng.randi_range(0,SOURCES.size()-1)])
-    var b := _src(SOURCES[rng.randi_range(0,SOURCES.size()-1)])
-    var c := _src(SOURCES[rng.randi_range(0,SOURCES.size()-1)])
+    var a: Image = _src(SOURCES[rng.randi_range(0,SOURCES.size()-1)])
+    var b: Image = _src(SOURCES[rng.randi_range(0,SOURCES.size()-1)])
+    var c: Image = _src(SOURCES[rng.randi_range(0,SOURCES.size()-1)])
     _strip(img,a,0,540); _strip(img,b,520,620); _strip(img,c,1110,562)
     img.fill_rect(Rect2i(520+rng.randi_range(-15,20),0,86,H),Color(0.055,0.055,0.06,1))
     img.fill_rect(Rect2i(1110+rng.randi_range(-20,20),0,92,H),Color(0.05,0.05,0.055,1))
     _deck(img)
 
 func _compose_corridor(img:Image) -> void:
-    var base := _src("page-001.webp" if rng.randi_range(0,1)==0 else "page-006.webp")
+    var base: Image = _src("page-001.webp" if rng.randi_range(0,1)==0 else "page-006.webp")
     img.blit_rect(base,Rect2i(0,0,W,H),Vector2i.ZERO)
     _strip(img,_src(SOURCES[rng.randi_range(0,SOURCES.size()-1)]),0,320)
     _strip(img,_src(SOURCES[rng.randi_range(0,SOURCES.size()-1)]),1312,360)
@@ -92,30 +92,30 @@ func _compose_corridor(img:Image) -> void:
     img.fill_rect(Rect2i(1320,0,76,H),Color(0.045,0.045,0.05,1))
 
 func _strip(dst:Image, src:Image, dx:int, width:int) -> void:
-    var sx := rng.randi_range(0,maxi(0,src.get_width()-width))
+    var sx: int = rng.randi_range(0,maxi(0,src.get_width()-width))
     dst.blit_rect(src,Rect2i(sx,0,width,H),Vector2i(dx,0))
 
 func _deck(img:Image) -> void:
     for y in range(570,H):
-        var t := float(y-570)/float(H-570)
-        var left := int(0 + 70*t)
-        var right := int(W - 210*(1.0-t))
+        var t: float = float(y-570)/float(H-570)
+        var left: int = int(70.0*t)
+        var right: int = int(float(W) - 210.0*(1.0-t))
         img.fill_rect(Rect2i(left,y,maxi(0,right-left),1),Color(0.06,0.065,0.065,1))
     for x in range(40,1020,40):
-        var y := int(650 - 0.11*x)
+        var y: int = int(650.0 - 0.11*float(x))
         img.fill_rect(Rect2i(x,y-18,2,26),Color(0.12,0.12,0.13,1))
         img.fill_rect(Rect2i(x,y,40,2),Color(0.78,0.78,0.78,0.22))
 
 func _fog(img:Image, rect:Rect2i, strength:float) -> void:
     for y in range(rect.position.y,rect.end.y):
-        var edge := abs((float(y-rect.position.y)/rect.size.y)-0.5)*2.0
-        var a := strength*(1.0-edge)
+        var edge: float = abs((float(y-rect.position.y)/float(rect.size.y))-0.5)*2.0
+        var a: float = strength*(1.0-edge)
         if a <= 0.0: continue
         for x in range(rect.position.x,rect.end.x):
             img.set_pixel(x,y,img.get_pixel(x,y).lerp(Color(0.97,0.97,0.97,1),a))
 
 func _frame(img:Image) -> void:
-    var c := Color(0.025,0.025,0.03,1)
+    var c: Color = Color(0.025,0.025,0.03,1)
     img.fill_rect(Rect2i(0,0,W,16),c); img.fill_rect(Rect2i(0,H-16,W,16),c)
     img.fill_rect(Rect2i(0,0,12,H),c); img.fill_rect(Rect2i(W-12,0,12,H),c)
 
@@ -124,17 +124,17 @@ func _red_marks(img:Image) -> void:
         for yy in range(-3,4):
             for xx in range(-3,4):
                 if xx*xx+yy*yy <= 9:
-                    var x:=p.x+xx; var y:=p.y+yy
+                    var x: int = p.x+xx; var y: int = p.y+yy
                     if x>=0 and x<W and y>=0 and y<H:
                         img.set_pixel(x,y,Color(0.95,0.04,0.04,1))
 
 func _src(name:String) -> Image:
     if cache.has(name): return cache[name]
-    var base := OS.get_executable_path().get_base_dir().path_join("source_fields").path_join(name)
+    var base: String = OS.get_executable_path().get_base_dir().path_join("source_fields").path_join(name)
     if not FileAccess.file_exists(base):
-        var fallback := Image.create(W,H,false,Image.FORMAT_RGBA8)
+        var fallback: Image = Image.create(W,H,false,Image.FORMAT_RGBA8)
         fallback.fill(Color(0.15,0.15,0.16,1)); cache[name]=fallback; return fallback
-    var im := Image.new(); im.load(base); im.convert(Image.FORMAT_RGBA8); cache[name]=im; return im
+    var im: Image = Image.new(); im.load(base); im.convert(Image.FORMAT_RGBA8); cache[name]=im; return im
 
 func _nav_abyss() -> void:
     top_y=600.0; bottom_y=840.0
@@ -149,29 +149,29 @@ func _nav_corridor() -> void:
     player_pos=Vector2(820,780); glow_a.position=Vector2(430,390); glow_b.position=Vector2(1180,610)
 
 func _move(delta:float) -> void:
-    var v := Input.get_vector("move_left","move_right","move_up","move_down")
+    var v: Vector2 = Input.get_vector("move_left","move_right","move_up","move_down")
     if v.length_squared()<0.001:return
     if abs(v.x)>0.05:facing=sign(v.x)
-    var d:=clamp((player_pos.y-top_y)/(bottom_y-top_y),0.0,1.0)
-    var speed:=lerp(FAR_SPEED,NEAR_SPEED,d)
-    var candidate:=player_pos+v.normalized()*speed*delta
+    var d: float = clamp((player_pos.y-top_y)/(bottom_y-top_y),0.0,1.0)
+    var speed: float = lerp(FAR_SPEED,NEAR_SPEED,d)
+    var candidate: Vector2 = player_pos+v.normalized()*speed*delta
     if Geometry2D.is_point_in_polygon(candidate,walkmesh):player_pos=candidate
     else:
-        var xo:=Vector2(candidate.x,player_pos.y); var yo:=Vector2(player_pos.x,candidate.y)
+        var xo: Vector2 = Vector2(candidate.x,player_pos.y); var yo: Vector2 = Vector2(player_pos.x,candidate.y)
         if Geometry2D.is_point_in_polygon(xo,walkmesh):player_pos=xo
         elif Geometry2D.is_point_in_polygon(yo,walkmesh):player_pos=yo
     _update_player()
 
 func _update_player() -> void:
     player.position=player_pos
-    var d:=clamp((player_pos.y-top_y)/(bottom_y-top_y),0.0,1.0)
-    var s:=lerp(0.38,1.02,d)
+    var d: float = clamp((player_pos.y-top_y)/(bottom_y-top_y),0.0,1.0)
+    var s: float = lerp(0.38,1.02,d)
     player.scale=Vector2(s*facing,s); player.z_index=int(player_pos.y)
 
 func _interaction() -> void:
-    var near:Dictionary={}; var best:=INF
+    var near: Dictionary = {}; var best: float = INF
     for item:Dictionary in interactions:
-        var dist:=player_pos.distance_to(item.pos)
+        var dist: float = player_pos.distance_to(item.pos)
         if dist<=float(item.radius) and dist<best: near=item; best=dist
     if near.is_empty():prompt.text="";return
     prompt.text="E  "+str(near.prompt)
@@ -181,5 +181,5 @@ func _interaction() -> void:
 func _draw() -> void:
     if not debug:return
     draw_colored_polygon(walkmesh,Color(1,0.1,0.1,0.10))
-    var closed:=PackedVector2Array(walkmesh);closed.append(walkmesh[0])
+    var closed: PackedVector2Array = PackedVector2Array(walkmesh);closed.append(walkmesh[0])
     draw_polyline(closed,Color(1,0.2,0.2,0.9),2.5,true)
