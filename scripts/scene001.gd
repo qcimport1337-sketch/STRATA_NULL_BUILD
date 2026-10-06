@@ -20,7 +20,7 @@ var pitch := 0.0
 func _ready() -> void:
     _ensure_inputs()
     if "--smoke-test" in OS.get_cmdline_user_args():
-        print("SCENE001_SMOKE_READY")
+        print("STRATA_SMOKE_READY")
         get_tree().quit()
         return
     _build_world()
