@@ -1,8 +1,8 @@
-; STRATA//NULL Modular Infinite Field Prototype 0.4
+; STRATA//NULL Transparent Modular Infinite Field Prototype 0.5
 config_version=5
 
 [application]
-config/name="STRATA // NULL — Modular Infinite Field Prototype"
+config/name="STRATA // NULL — Transparent Modular Infinite Field Prototype"
 run/main_scene="res://scenes/modular_field.tscn"
 config/features=PackedStringArray("4.7")
 boot_splash/show_image=false
