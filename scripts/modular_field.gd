@@ -44,6 +44,7 @@ func _ready()->void:
     var audit_seed:int=-1
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--audit-seed="): audit_seed=int(arg.get_slice("=",1))
+    seed_label.visible=false; message.visible=false
     _generate_scene(audit_seed)
     if "--audit-shot" in OS.get_cmdline_user_args():
         await get_tree().process_frame; await get_tree().process_frame; await get_tree().process_frame
@@ -63,7 +64,7 @@ func _process(delta:float)->void:
         show_debug=not show_debug; debug_label.visible=show_debug; queue_redraw()
     _move_player(delta); _update_interaction()
     var t:float=float(Time.get_ticks_msec())/1000.0
-    glow_a.energy=0.07+0.025*sin(t*2.0); glow_b.energy=0.075+0.025*sin(t*1.7+1.0)
+    glow_a.energy=0.0; glow_b.energy=0.0
     if msg_timer>0.0:
         msg_timer-=delta
         if msg_timer<=0.0:message.text="R regenerate   WASD move   E interact   F1 walkmesh"
@@ -86,27 +87,36 @@ func _clear_modules(parent:Node2D)->void:
     for child in parent.get_children():child.queue_free()
 
 func _make_background()->void:
-    var img:Image=Image.create(W,H,false,Image.FORMAT_RGBA8)
-    for y in range(H):
-        for x in range(W):
-            var dx:float=(float(x)-835.0)/760.0
-            var dy:float=(float(y)-420.0)/440.0
-            var fog:float=exp(-(dx*dx+dy*dy)*1.8)
-            var tone:float=16.0+176.0*fog
-            img.set_pixel(x,y,Color(tone/255.0,tone/255.0,tone/255.0,1.0))
-    for i in range(30):
-        var x:int=rng.randi_range(70,W-70)
-        var y0:int=rng.randi_range(110,390)
-        var y1:int=rng.randi_range(540,840)
-        _line(img,Vector2i(x,y0),Vector2i(x,y1),Color(0.12,0.12,0.14,rng.randf_range(0.12,0.25)))
-        if rng.randf()<0.55:
-            _line(img,Vector2i(x-8,y0+rng.randi_range(20,100)),Vector2i(x+8,y0+rng.randi_range(20,100)),Color(0.7,0.7,0.72,0.08))
-    for i in range(5):
-        var yy:int=rng.randi_range(190,600)
-        _line(img,Vector2i(0,yy),Vector2i(W,yy+rng.randi_range(-18,18)),Color(0.12,0.12,0.14,0.16))
-    img.fill_rect(Rect2i(0,0,46,H),Color(0.012,0.012,0.015,1.0))
-    img.fill_rect(Rect2i(W-46,0,46,H),Color(0.012,0.012,0.015,1.0))
-    img.fill_rect(Rect2i(0,H-28,W,28),Color(0.012,0.012,0.015,1.0))
+    var bw:int=418
+    var bh:int=235
+    var small:Image=Image.create(bw,bh,false,Image.FORMAT_RGBA8)
+    for y in range(bh):
+        for x in range(bw):
+            var px:float=float(x)*4.0
+            var py:float=float(y)*4.0
+            var dx1:float=(px-690.0)/520.0
+            var dy1:float=(py-430.0)/360.0
+            var dx2:float=(px-1160.0)/620.0
+            var dy2:float=(py-430.0)/410.0
+            var fog1:float=exp(-(dx1*dx1+dy1*dy1)*2.0)
+            var fog2:float=exp(-(dx2*dx2+dy2*dy2)*2.4)
+            var tone:float=11.0+108.0*fog1+54.0*fog2
+            small.set_pixel(x,y,Color(tone/255.0,tone/255.0,tone/255.0,1.0))
+    small.resize(W,H,Image.INTERPOLATE_BILINEAR)
+    var img:Image=small
+    var xs:Array[int]=[95,180,285,395,520,650,790,920,1060,1200,1355,1490,1590]
+    for x in xs:
+        var y0:int=rng.randi_range(70,240)
+        var y1:int=rng.randi_range(650,880)
+        var a:float=rng.randf_range(0.10,0.22)
+        _line(img,Vector2i(x,y0),Vector2i(x,y1),Color(0.64,0.64,0.66,a))
+        if rng.randf()<0.65:_line(img,Vector2i(x+8,y0+20),Vector2i(x+8,y1-20),Color(0.10,0.10,0.12,a*0.75))
+    for yy in [210,330,470,560]:
+        _line(img,Vector2i(0,yy+rng.randi_range(-16,16)),Vector2i(W,yy+rng.randi_range(-18,18)),Color(0.50,0.50,0.52,0.10))
+    img.fill_rect(Rect2i(0,0,72,H),Color(0.01,0.01,0.012,1.0))
+    img.fill_rect(Rect2i(W-68,0,68,H),Color(0.01,0.01,0.012,1.0))
+    img.fill_rect(Rect2i(0,0,W,34),Color(0.012,0.012,0.014,1.0))
+    img.fill_rect(Rect2i(0,H-36,W,36),Color(0.008,0.008,0.01,1.0))
     generated_bg.texture=ImageTexture.create_from_image(img)
 
 func _line(img:Image,a:Vector2i,b:Vector2i,col:Color)->void:
@@ -119,49 +129,56 @@ func _line(img:Image,a:Vector2i,b:Vector2i,col:Color)->void:
         if e2<=dx:err+=dx;y+=sy
 
 func _abyss()->void:
-    _module(play_modules,"straight_catwalk.png",Vector2(830,665),1.34,false,625,1.0,-0.015)
-    _module(play_modules,"balcony_landing.png",Vector2(260,700),0.72,false,630,1.0,0.0)
-    _module(play_modules,"cantilever_platform.png",Vector2(1390,635),0.70,true,630,1.0,0.0)
-    _module(mid_modules,"abyss_column.png",Vector2(470,390),0.86,false,-7,0.72,0.0)
-    _module(mid_modules,"elevator_shaft.png",Vector2(1260,360),0.78,true,-6,0.66,0.0)
-    walkmesh=PackedVector2Array([Vector2(110,825),Vector2(120,715),Vector2(310,690),Vector2(610,675),Vector2(930,660),Vector2(1260,640),Vector2(1550,650),Vector2(1570,760),Vector2(1260,735),Vector2(930,750),Vector2(610,765),Vector2(300,780),Vector2(110,810)])
-    player_pos=Vector2(235,785);top_y=625.0;bottom_y=830.0
-    interactions=[{"pos":Vector2(1425,650),"radius":88.0,"prompt":"CONTINUE","message":"The route continues beyond the generated span."}]
-    glow_a.position=Vector2(470,365);glow_b.position=Vector2(1390,610)
+    _module(play_modules,"balcony_landing.png",Vector2(250,694),0.60,false,630,0.96,0.0)
+    _module(play_modules,"straight_catwalk.png",Vector2(820,658),1.08,false,625,1.0,-0.012)
+    _module(play_modules,"cantilever_platform.png",Vector2(1375,625),0.60,true,630,0.98,0.0)
+    _module(mid_modules,"abyss_column.png",Vector2(465,375),0.72,false,-7,0.70,0.0)
+    _module(mid_modules,"elevator_shaft.png",Vector2(1260,350),0.67,true,-6,0.62,0.0)
+    _module(mid_modules,"service_riser.png",Vector2(850,430),0.54,false,-5,0.46,0.0)
+    _module(mid_modules,"transfer_bridge.png",Vector2(950,455),0.34,true,-4,0.34,0.0)
+    walkmesh=PackedVector2Array([Vector2(130,805),Vector2(145,720),Vector2(320,690),Vector2(650,670),Vector2(960,655),Vector2(1280,635),Vector2(1525,648),Vector2(1535,715),Vector2(1280,704),Vector2(960,720),Vector2(640,740),Vector2(300,770),Vector2(130,790)])
+    player_pos=Vector2(235,765);top_y=620.0;bottom_y=820.0
+    interactions=[{"pos":Vector2(1400,640),"radius":85.0,"prompt":"CONTINUE","message":"The route continues through the megastructure."}]
+    glow_a.position=Vector2(470,355);glow_b.position=Vector2(1390,610)
 
 func _maintenance()->void:
-    _module(play_modules,"straight_catwalk.png",Vector2(820,670),1.18,false,625,1.0,-0.01)
-    _module(play_modules,"maintenance_spine.png",Vector2(280,700),0.88,false,630,1.0,0.0)
-    _module(play_modules,"balcony_landing.png",Vector2(1385,645),0.75,true,630,1.0,0.0)
-    _module(mid_modules,"service_riser.png",Vector2(470,390),0.78,false,-7,0.65,0.0)
-    _module(mid_modules,"elevator_shaft.png",Vector2(1180,355),0.80,false,-6,0.66,0.0)
-    walkmesh=PackedVector2Array([Vector2(90,840),Vector2(105,720),Vector2(320,690),Vector2(650,675),Vector2(980,665),Vector2(1310,645),Vector2(1550,650),Vector2(1570,770),Vector2(1300,745),Vector2(980,760),Vector2(650,775),Vector2(310,790),Vector2(90,820)])
-    player_pos=Vector2(230,800);top_y=630.0;bottom_y=840.0
-    interactions=[{"pos":Vector2(1415,650),"radius":90.0,"prompt":"SERVICE ACCESS","message":"A maintenance branch continues into the next generated field."}]
+    _module(play_modules,"maintenance_spine.png",Vector2(280,690),0.72,false,630,1.0,0.0)
+    _module(play_modules,"straight_catwalk.png",Vector2(815,662),0.96,false,625,1.0,-0.008)
+    _module(play_modules,"balcony_landing.png",Vector2(1390,635),0.64,true,630,1.0,0.0)
+    _module(mid_modules,"service_riser.png",Vector2(470,380),0.69,false,-7,0.66,0.0)
+    _module(mid_modules,"elevator_shaft.png",Vector2(1190,355),0.70,false,-6,0.64,0.0)
+    _module(mid_modules,"abyss_column.png",Vector2(820,430),0.50,false,-5,0.44,0.0)
+    _module(mid_modules,"enclosed_service_bridge.png",Vector2(1030,455),0.34,false,-4,0.34,0.0)
+    walkmesh=PackedVector2Array([Vector2(115,815),Vector2(120,720),Vector2(310,690),Vector2(640,672),Vector2(970,660),Vector2(1300,642),Vector2(1530,648),Vector2(1540,720),Vector2(1300,710),Vector2(970,726),Vector2(640,744),Vector2(300,775),Vector2(115,800)])
+    player_pos=Vector2(230,780);top_y=625.0;bottom_y=830.0
+    interactions=[{"pos":Vector2(1410,645),"radius":85.0,"prompt":"SERVICE ACCESS","message":"A maintenance branch continues deeper."}]
     glow_a.position=Vector2(390,615);glow_b.position=Vector2(1385,620)
 
 func _vertical_loop()->void:
-    _module(play_modules,"ramp_connector.png",Vector2(330,710),0.90,false,625,1.0,0.0)
-    _module(play_modules,"ring_landing.png",Vector2(760,650),0.86,false,630,1.0,0.0)
-    _module(play_modules,"suspended_walkway.png",Vector2(1260,610),0.88,false,630,1.0,-0.01)
-    _module(mid_modules,"abyss_column.png",Vector2(760,360),0.95,false,-8,0.73,0.0)
-    _module(mid_modules,"elevator_shaft.png",Vector2(1320,340),0.75,false,-7,0.62,0.0)
-    walkmesh=PackedVector2Array([Vector2(105,850),Vector2(110,745),Vector2(330,710),Vector2(610,675),Vector2(850,650),Vector2(1110,625),Vector2(1480,605),Vector2(1570,650),Vector2(1560,750),Vector2(1260,735),Vector2(940,760),Vector2(600,790),Vector2(300,820),Vector2(105,840)])
-    player_pos=Vector2(230,815);top_y=590.0;bottom_y=850.0
-    interactions=[{"pos":Vector2(760,650),"radius":90.0,"prompt":"LIFT NODE","message":"The generated vertical loop continues above and below."}]
-    glow_a.position=Vector2(760,345);glow_b.position=Vector2(1320,585)
+    _module(play_modules,"ramp_connector.png",Vector2(285,705),0.66,false,630,1.0,0.0)
+    _module(play_modules,"straight_catwalk.png",Vector2(805,655),0.96,false,625,1.0,-0.008)
+    _module(play_modules,"ring_landing.png",Vector2(1370,615),0.64,true,630,1.0,0.0)
+    _module(mid_modules,"abyss_column.png",Vector2(730,350),0.82,false,-8,0.72,0.0)
+    _module(mid_modules,"elevator_shaft.png",Vector2(1320,330),0.66,false,-7,0.60,0.0)
+    _module(mid_modules,"service_riser.png",Vector2(1030,425),0.48,true,-6,0.46,0.0)
+    _module(mid_modules,"transfer_bridge.png",Vector2(1000,470),0.32,false,-5,0.32,0.0)
+    walkmesh=PackedVector2Array([Vector2(125,835),Vector2(135,748),Vector2(320,705),Vector2(620,677),Vector2(930,655),Vector2(1240,632),Vector2(1500,610),Vector2(1540,625),Vector2(1540,698),Vector2(1260,690),Vector2(940,716),Vector2(620,748),Vector2(310,790),Vector2(125,820)])
+    player_pos=Vector2(230,795);top_y=590.0;bottom_y=845.0
+    interactions=[{"pos":Vector2(1370,625),"radius":88.0,"prompt":"LIFT NODE","message":"The generated vertical route continues above and below."}]
+    glow_a.position=Vector2(730,345);glow_b.position=Vector2(1370,590)
 
 func _far_dressing()->void:
-    var xs:Array[int]=[170,430,720,1000,1290,1510]
+    var xs:Array[int]=[95,220,360,500,650,805,955,1110,1260,1410,1550]
     for i in range(xs.size()):
-        _module(far_modules,_pick(VERTICALS),Vector2(xs[i]+rng.randi_range(-28,28),rng.randi_range(315,410)),rng.randf_range(0.44,0.60),rng.randf()>0.55,-60+i,rng.randf_range(0.18,0.30),0.0)
-    var ys:Array[int]=[270,365,455,535]
+        _module(far_modules,_pick(VERTICALS),Vector2(xs[i]+rng.randi_range(-24,24),rng.randi_range(245,390)),rng.randf_range(0.36,0.54),rng.randf()>0.55,-80+i,rng.randf_range(0.24,0.38),0.0)
+    var ys:Array[int]=[165,245,330,415,500,565]
     for i in range(ys.size()):
-        _module(far_modules,_pick(ROUTES),Vector2(rng.randi_range(360,1310),ys[i]+rng.randi_range(-18,18)),rng.randf_range(0.28,0.39),rng.randf()>0.5,-50+i,rng.randf_range(0.14,0.24),rng.randf_range(-0.015,0.015))
+        _module(far_modules,_pick(ROUTES),Vector2(rng.randi_range(290,1380),ys[i]+rng.randi_range(-14,14)),rng.randf_range(0.24,0.35),rng.randf()>0.5,-65+i,rng.randf_range(0.19,0.31),rng.randf_range(-0.01,0.01))
 
 func _foreground_dressing()->void:
-    if rng.randf()<0.50:_module(foreground_modules,_pick(["service_riser.png","abyss_column.png"]),Vector2(-110,610),1.05,false,2200,0.78,0.0)
-    if rng.randf()<0.35:_module(foreground_modules,_pick(["service_riser.png","elevator_shaft.png"]),Vector2(W+110,600),1.0,true,2200,0.74,0.0)
+    if rng.randf()<0.82:_module(foreground_modules,_pick(["service_riser.png","abyss_column.png"]),Vector2(-75,575),1.06,false,2200,0.88,0.0)
+    if rng.randf()<0.68:_module(foreground_modules,_pick(["service_riser.png","elevator_shaft.png"]),Vector2(W+78,575),1.02,true,2200,0.84,0.0)
+    if rng.randf()<0.55:_module(foreground_modules,_pick(["enclosed_service_bridge.png","maintenance_spine.png"]),Vector2(rng.randi_range(520,1120),95),0.52,rng.randf()>0.5,2150,0.38,rng.randf_range(-0.012,0.012))
 
 func _pick(arr:Array[String])->String:return arr[rng.randi_range(0,arr.size()-1)]
 
@@ -171,7 +188,7 @@ func _module(parent:Node2D,filename:String,pos:Vector2,scale_value:float,flip_x:
     s.position=pos
     s.scale=Vector2((-scale_value if flip_x else scale_value),scale_value)
     s.rotation=rot
-    s.modulate=Color(1,1,1,opacity)
+    s.modulate=Color(0.92,0.92,0.94,opacity)
     s.z_index=z
     var mat:=CanvasItemMaterial.new()
     mat.blend_mode=CanvasItemMaterial.BLEND_MODE_MIX
@@ -199,7 +216,7 @@ func _move_player(delta:float)->void:
     _update_player_visual()
 
 func _update_player_visual()->void:
-    player.position=player_pos;var d:float=clamp((player_pos.y-top_y)/(bottom_y-top_y),0.0,1.0);var s:float=lerp(0.38,1.0,d);player.scale=Vector2(s*facing,s);player.z_index=int(player_pos.y)
+    player.position=player_pos;var d:float=clamp((player_pos.y-top_y)/(bottom_y-top_y),0.0,1.0);var s:float=lerp(0.40,0.92,d);player.scale=Vector2(s*facing,s);player.z_index=int(player_pos.y)
 
 func _update_interaction()->void:
     var near:Dictionary={};var best:float=INF
