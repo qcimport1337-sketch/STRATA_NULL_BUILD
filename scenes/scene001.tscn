@@ -1,1 +1,6 @@
-[gd_scene load_steps=2 format=3]\n\n[ext_resource type="Script" path="res://scripts/scene001.gd" id="1"]\n\n[node name="Scene001" type="Node3D"]\nscript = ExtResource("1")\n
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/scene001.gd" id="1"]
+
+[node name="Scene001" type="Node3D"]
+script = ExtResource("1")
