@@ -1,9 +1,9 @@
-; STRATA//NULL Art-First Field Prototype 0.2
+; STRATA//NULL Procedural Art-First Prototype 0.3
 config_version=5
 
 [application]
-config/name="STRATA // NULL — Art-First Field Prototype"
-run/main_scene="res://scenes/field_art_first.tscn"
+config/name="STRATA // NULL — Procedural Art-First Prototype"
+run/main_scene="res://scenes/procedural_field.tscn"
 config/features=PackedStringArray("4.7")
 boot_splash/show_image=false
 boot_splash/bg_color=Color(0.01, 0.01, 0.012, 1)
