@@ -1,7 +1,7 @@
 config_version=5
 
 [application]
-config/name="STRATA // NULL — Scene 001 v0.2"
+config/name="STRATA // NULL — Scene 001 Pixel Depth v0.3"
 run/main_scene="res://scenes/scene001.tscn"
 config/features=PackedStringArray("4.7")
 boot_splash/show_image=false
